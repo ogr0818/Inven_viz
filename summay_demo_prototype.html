@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>月報合併結果｜虛擬資料預覽</title>
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC",sans-serif;color:#24343b;background:#f4f6f7;font-size:14px;--accent:#246b68;--line:#dce4e7}*{box-sizing:border-box}body{margin:0}main{max-width:1320px;margin:auto;padding:40px 28px 60px}.eyebrow{display:flex;align-items:center;gap:10px;color:var(--accent);font-size:12px;font-weight:650;letter-spacing:.08em}.badge{border:1px solid #b7d2cd;border-radius:4px;padding:4px 8px;background:#edf6f3}h1{font-size:28px;margin:15px 0 9px;font-weight:650;letter-spacing:.02em}.intro{color:#63747c;line-height:1.8;max-width:850px;margin:0 0 26px}button{font:inherit;cursor:pointer}button:focus-visible,summary:focus-visible{outline:3px solid #97c5c1;outline-offset:3px}.scenarios{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}.scenario{padding:10px 16px;border:1px solid var(--line);border-radius:6px;background:white;color:#56666d}.scenario[aria-selected="true"]{background:var(--accent);color:white;border-color:var(--accent)}.guide{padding:13px 16px;line-height:1.7;background:#eaf3f1;border-left:3px solid var(--accent);margin-bottom:23px}.guide strong{margin-right:8px}.sheet-card{background:white;border:1px solid var(--line);border-radius:9px;overflow:hidden;box-shadow:0 3px 14px #25394206}.workbook-head{display:flex;justify-content:space-between;gap:15px;align-items:center;padding:20px 22px;border-bottom:1px solid var(--line)}.filename{font-size:18px;font-weight:650}.subtext{font-size:12px;color:#72818a;margin-top:5px}.status{background:#edf6f1;color:#397052;padding:6px 10px;border-radius:5px;font-size:12px}.status.blocked{background:#faeeee;color:#a34747}.stats{display:flex;flex-wrap:wrap;gap:24px;padding:18px 22px;border-bottom:1px solid var(--line)}.stat{min-width:100px}.stat span{display:block;color:#74828a;font-size:12px;margin-bottom:5px}.stat b{font-size:22px;font-weight:600;font-variant-numeric:tabular-nums}.stat em{font-size:12px;font-style:normal;color:#76878d;margin-left:5px}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;white-space:nowrap;font-size:14px}th{background:#f5f8f8;color:#56686f;font-weight:600;padding:13px 16px;border-bottom:1px solid var(--line);text-align:center}td{padding:16px;border-bottom:1px solid #edf0f1;text-align:left}tbody tr:last-child td{border-bottom:none}.code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:13px}.num{text-align:right;font-variant-numeric:tabular-nums}.center{text-align:center}.drug-name{min-width:235px}.negative{color:#ad5252}.focus-cell{background:#fff5d9;box-shadow:inset 0 -2px #debd6a}.month-tabs{display:flex;gap:4px;align-items:center;padding:10px 18px;background:#f6f8f8;border-top:1px solid var(--line)}.month-tab{border:1px solid transparent;padding:8px 18px;border-radius:5px;background:transparent;color:#6c7b82;font-family:ui-monospace,SFMono-Regular,monospace}.month-tab[aria-selected="true"]{background:white;border-color:var(--line);color:var(--accent);font-weight:700}.tab-caption{color:#839097;font-size:12px;margin-left:auto}.explain{padding:15px 22px;background:#fcfdfd;border-top:1px solid var(--line);color:#65777e;line-height:1.8;font-size:13px}.explain strong{color:#3b575b}.empty{padding:35px 22px;line-height:1.8;color:#8b4949;background:#fffafa}.duplicate-card{margin-top:20px;border:1px solid #e7c9c9;border-radius:8px;background:white;overflow:hidden}.duplicate-title{padding:15px 20px;background:#faeeee;color:#934444;font-weight:600}.duplicate-card td{padding:13px 16px}.source{background:white;border:1px solid var(--line);border-radius:8px;margin-top:24px}.source summary{padding:18px 20px;cursor:pointer;color:#52656c;font-weight:600}.source-content{padding:0 20px 20px}.source h3{font-size:14px;margin:25px 0 10px}.source table{font-size:13px}.source td,.source th{padding:10px 14px}.source-note{font-size:12px;color:#75858c;line-height:1.8}.rules{margin:20px 2px 0;color:#64757c;line-height:1.9;font-size:13px}.rules p{margin:4px 0}.footer{margin-top:24px;color:#879399;font-size:12px;line-height:1.7}[hidden]{display:none!important}@media(max-width:650px){main{padding:24px 14px 40px}h1{font-size:23px}.workbook-head{align-items:flex-start;padding:16px}.stats{gap:15px;padding:16px}.stat{min-width:90px}.stat b{font-size:19px}.tab-caption{display:none}td{padding:13px 12px}.scenario{padding:9px 11px}.source-content{padding:0 12px 15px}}
+</style>
+</head>
+<body>
+<main>
+  <div class="eyebrow"><span class="badge">虛擬資料 DEMO</span><span>月報合併結果預覽</span></div>
+  <h1>確認你的月明細輸出</h1>
+  <p class="intro">用虛擬藥品查看合併後的八個中文欄位與月份分頁，並確認缺少耗量、負實發量及重複鍵的處理結果。每列代表一個藥品在一個月份的資料。</p>
+  <div class="scenarios" role="tablist" aria-label="示範情境">
+    <button class="scenario" type="button" role="tab" data-scenario="normal" aria-selected="true">正常合併</button>
+    <button class="scenario" type="button" role="tab" data-scenario="missing" aria-selected="false">缺耗量補 0</button>
+    <button class="scenario" type="button" role="tab" data-scenario="exclude" aria-selected="false">負實發量排除</button>
+    <button class="scenario" type="button" role="tab" data-scenario="duplicate" aria-selected="false">耗量重複鍵</button>
+  </div>
+  <div class="guide" id="guide" role="status" aria-live="polite"></div>
+  <section class="sheet-card" aria-label="合併後活頁簿預覽">
+    <div class="workbook-head"><div><div class="filename">summay.xlsx</div><div class="subtext" id="period"></div></div><span class="status" id="status"></span></div>
+    <div class="stats" id="stats"></div>
+    <div class="table-wrap" id="result-wrap"><table aria-label="合併後八欄月明細"><thead><tr><th>藥品代碼</th><th>藥品名稱</th><th>實發量</th><th>住院耗用</th><th>庫存量</th><th>撥補年份</th><th>撥補月份</th><th>劑型</th></tr></thead><tbody id="result"></tbody></table></div>
+    <div class="empty" id="blocked-message" hidden>耗量表有重複鍵，整份合併停止。本次不產生新的輸出檔案；若已有舊檔案，保留舊檔案。</div>
+    <div class="explain" id="explain"></div>
+    <div class="month-tabs" role="tablist" aria-label="月份工作表">
+      <button class="month-tab" type="button" role="tab" data-month="11501" aria-selected="true">11501</button>
+      <button class="month-tab" type="button" role="tab" data-month="11502" aria-selected="false">11502</button>
+      <button class="month-tab" type="button" role="tab" data-month="11503" aria-selected="false">11503</button>
+      <span class="tab-caption">保留月報原工作表名稱</span>
+    </div>
+  </section>
+  <section class="duplicate-card" id="duplicate-card" hidden aria-label="完整重複鍵內容"><div class="duplicate-title" id="duplicate-title"></div><div class="table-wrap"><table><thead><tr><th>來源工作表</th><th>Excel 列號</th><th>藥品代碼</th><th>住院耗用</th><th>撥補年份</th><th>撥補月份</th></tr></thead><tbody id="duplicates"></tbody></table></div></section>
+  <details class="source" id="source"><summary>查看本月份合併前的虛擬資料</summary><div class="source-content" id="source-content"></div></details>
+  <div class="rules"><p><strong>欄位對應：</strong>藥品代碼與基本資料配對，住院耗用以藥品代碼、撥補年份及撥補月份共同配對。</p><p><strong>數值規則：</strong>實發量小於 0 的整列排除；等於 0 保留。住院耗用與庫存量保留原始正負號。各月庫存各自保留。</p></div>
+  <p class="footer">本頁為獨立原型，所有藥品與數值均為虛構。可直接用瀏覽器開啟；切換情境只影響本頁預覽。</p>
+</main>
+<script>
+// 虛擬資料；不讀取或修改真實工作簿。
+const base=[
+ {drug_id:'DMO01O',drug_name:'示範藥 A 10mg 錠',drug_type:'O'},
+ {drug_id:'DMO02I',drug_name:'示範藥 B 2mL 注射劑',drug_type:'I'},
+ {drug_id:'DMO03E',drug_name:'示範藥 C 15g 外用劑',drug_type:'E'},
+ {drug_id:'DMO04O',drug_name:'示範藥 D 5mg 錠',drug_type:'O'},
+ {drug_id:'DMO05S',drug_name:'示範藥 E 100mL 液劑',drug_type:'S'},
+ {drug_id:'DMO06O',drug_name:'示範藥 F 20mg 錠',drug_type:'O'}
+];
+const monthly={
+ '11501':[['DMO01O',120,35],['DMO02I',0,8],['DMO03E',25,-2],['DMO04O',-8,14],['DMO05S',60,40]],
+ '11502':[['DMO01O',100,22],['DMO02I',12,10],['DMO03E',0,0],['DMO04O',20,7],['DMO05S',-2,12]],
+ '11503':[['DMO01O',80,30],['DMO02I',0,5],['DMO03E',10,-1],['DMO04O',-4,9],['DMO05S',30,18]]
+};
+const total=[
+ ['DMO01O',95,'115','01'],['DMO02I',0,'115','01'],['DMO03E',-3,'115','01'],['DMO05S',45,'115','01'],['DMO06O',21,'115','01'],
+ ['DMO01O',80,'115','02'],['DMO02I',9,'115','02'],['DMO04O',12,'115','02'],['DMO05S',11,'115','02'],['DMO06O',18,'115','02'],
+ ['DMO01O',64,'115','03'],['DMO02I',-2,'115','03'],['DMO03E',8,'115','03'],['DMO06O',15,'115','03']
+].map(([drug_id,total_qty,inv_year,inv_month],i)=>({drug_id,total_qty,inv_year,inv_month,row:i+2}));
+function mergeDemo(baseRows,monthRows,totalRows){
+ const groups=new Map();
+ for(const r of totalRows){const k=[r.drug_id,r.inv_year,r.inv_month].join('|');if(!groups.has(k))groups.set(k,[]);groups.get(k).push(r)}
+ const duplicates=[...groups.values()].filter(g=>g.length>1).flat();
+ if(duplicates.length)return {blocked:true,duplicates,duplicateKeys:[...groups.values()].filter(g=>g.length>1).length,sheets:{}};
+ const basic=new Map(baseRows.map(r=>[r.drug_id,r]));
+ const sheets={};
+ for(const [sheet,rows]of Object.entries(monthRows)){
+  const year=sheet.slice(0,3),month=sheet.slice(3);const kept=[],excluded=[],missing=[];
+  for(const [drug_id,actual,stock]of rows){
+   if(actual<0){excluded.push({drug_id,actual,stock});continue}
+   const found=groups.get([drug_id,year,month].join('|'))?.[0];
+   if(!found)missing.push(drug_id);
+   kept.push({drug_id,drug_name:basic.get(drug_id).drug_name,actual,qty:found?found.total_qty:0,stock,year,month,type:basic.get(drug_id).drug_type,filled:!found});
+  }
+  sheets[sheet]={rows:kept,excluded,missing,inputCount:rows.length};
+ }
+ return {blocked:false,duplicates:[],sheets};
+}
+const state={month:'11501',scenario:'normal'};
+const descriptions={normal:['正常合併','先看八個中文欄位，再點選下方月份分頁。實發量為 0 的列仍保留，負的住院耗用與庫存也保留。'],missing:['缺耗量補 0','示範藥 E 在 11503 沒有同年月耗量紀錄，住院耗用補為 0；黃色儲存格指出補零位置。'],exclude:['負實發量排除','示範藥 D 在 11501 的實發量為 −8，因此整列排除。打開下方來源資料，可核對被排除的原列。'],duplicate:['耗量重複鍵','加入一筆示範藥 A 的 11501 耗量，造成同藥品、同年月有兩筆。整份合併停止，下方完整列出兩筆內容。']};
+const escape=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function td(value,cls=''){return `<td class="${cls}">${escape(value)}</td>`}
+function smallTable(headers,rows){return `<div class="table-wrap"><table><thead><tr>${headers.map(h=>`<th>${escape(h)}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>'<tr>'+r.map(v=>td(v)).join('')+'</tr>').join('')}</tbody></table></div>`}
+function render(){
+ const activeTotal=state.scenario==='duplicate'?[...total,{...total[0],total_qty:7,row:total.length+2}]:total;
+ const output=mergeDemo(base,monthly,activeTotal),blocked=output.blocked,sheet=output.sheets[state.month];
+ const [title,description]=descriptions[state.scenario];
+ document.getElementById('guide').innerHTML=`<strong>${escape(title)}</strong>${escape(description)}`;
+ document.getElementById('period').textContent=`工作表 ${state.month} · 民國 ${state.month.slice(0,3)} 年 ${Number(state.month.slice(3))} 月 · 每列一個品項月份`;
+ const status=document.getElementById('status');status.textContent=blocked?'合併停止':'合併完成 · 虛擬結果';status.classList.toggle('blocked',blocked);
+ const stats=blocked?[['重複鍵組數',output.duplicateKeys,'組'],['完整重複資料',output.duplicates.length,'列'],['新增輸出',0,'份']]:[['月報資料',sheet.inputCount,'列'],['排除負實發量',sheet.excluded.length,'列'],['耗量缺紀錄補 0',sheet.missing.length,'列'],['輸出月明細',sheet.rows.length,'列']];
+ document.getElementById('stats').innerHTML=stats.map(([label,n,unit])=>`<div class="stat"><span>${label}</span><b>${n}</b><em>${unit}</em></div>`).join('');
+ document.getElementById('result-wrap').hidden=blocked;document.getElementById('blocked-message').hidden=!blocked;
+ document.getElementById('result').innerHTML=blocked?'':sheet.rows.map(r=>'<tr>'+td(r.drug_id,'code')+td(r.drug_name,'drug-name')+td(r.actual,'num')+td(r.qty,'num'+(r.qty<0?' negative':'')+(r.filled&&state.scenario==='missing'?' focus-cell':''))+td(r.stock,'num'+(r.stock<0?' negative':''))+td(r.year,'center code')+td(r.month,'center code')+td(r.type,'center code')+'</tr>').join('');
+ document.getElementById('explain').innerHTML=blocked?'重複鍵檢查涵蓋整份耗量資料；切換月份也不會產生新的輸出。':`<strong>本月處理：</strong> ${sheet.excluded.map(r=>`${escape(r.drug_id)} 的實發量 ${r.actual}，整列排除。`).join(' ')} ${sheet.missing.length?sheet.missing.map(id=>`${escape(id)} 缺少同年月耗量，補為 0。`).join(' '):'其餘保留列均找到同年月耗量。'} <span>來源明確為 0 與缺紀錄補 0，在輸出中都顯示 0。</span>`;
+ document.getElementById('duplicate-card').hidden=!blocked;
+ if(blocked){document.getElementById('duplicate-title').textContent=`完整重複內容 · ${output.duplicateKeys} 組鍵 · ${output.duplicates.length} 列`;document.getElementById('duplicates').innerHTML=output.duplicates.map(r=>'<tr>'+td('total_screen','code')+td(r.row,'center')+td(r.drug_id,'code')+td(r.total_qty,'num')+td(r.inv_year,'center code')+td(r.inv_month,'center code')+'</tr>').join('')}
+ document.getElementById('source-content').innerHTML='<h3>基本資料</h3>'+smallTable(['藥品代碼','藥品名稱','劑型'],base.map(r=>[r.drug_id,r.drug_name,r.drug_type]))+`<h3>月報原工作表：${state.month}</h3>`+smallTable(['Excel 列號','藥品代碼','實發量','庫存量'],monthly[state.month].map((r,i)=>[i+2,...r]))+'<h3>耗量資料：本月份</h3>'+smallTable(['Excel 列號','藥品代碼','住院耗用','撥補年份','撥補月份'],activeTotal.filter(r=>r.inv_year+r.inv_month===state.month).map(r=>[r.row,r.drug_id,r.total_qty,r.inv_year,r.inv_month]))+'<p class="source-note">示範藥 F 只有耗量紀錄，本月份月報未收錄，因此不會新增到輸出結果。此處來源欄名採中文對應名稱，方便核對。</p>';
+ document.querySelectorAll('[data-scenario]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.scenario===state.scenario)));
+ document.querySelectorAll('[data-month]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.month===state.month)));
+}
+document.querySelectorAll('[data-scenario]').forEach(b=>b.addEventListener('click',()=>{state.scenario=b.dataset.scenario;state.month=state.scenario==='missing'?'11503':'11501';document.getElementById('source').open=state.scenario==='exclude';render()}));
+document.querySelectorAll('[data-month]').forEach(b=>b.addEventListener('click',()=>{state.month=b.dataset.month;if(state.scenario!=='duplicate')state.scenario='normal';render()}));
+render();
+</script>
+</body>
+</html>

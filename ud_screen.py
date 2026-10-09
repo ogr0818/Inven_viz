@@ -16,6 +16,7 @@ from quantity_rules import filter_quantity_range
 
 
 COLUMNS = ["drug_id", "drug_name", "total_qty", "phtxid", "phoutid"]
+OUTPUT_COLUMNS = [*COLUMNS, "inv_year", "inv_month"]
 MAX_DATA_ROWS = 1_048_575  # Excel 列數上限扣除標題列。
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -89,6 +90,16 @@ def sheet_name(stem: str, used: set[str]) -> str:
     return name
 
 
+def inventory_period(name: str) -> tuple[str, str]:
+    """從工作表名稱取得三位年份及兩位月份文字。"""
+    if not re.fullmatch(r"[0-9]{3}[0-9]{1,2}", name):
+        raise ValueError(f"工作表 {name!r}：名稱須為 3 位數字年份及 1–12 月")
+    year, month = name[:3], name[3:]
+    if not 1 <= int(month) <= 12:
+        raise ValueError(f"工作表 {name!r}：月份須介於 1–12")
+    return year, month.zfill(2)
+
+
 def screen_to_excel(input_dir: Path, output: Path) -> dict[str, int]:
     """依檔名排序處理 CSV；成功完成後才取代輸出檔案。"""
     if not input_dir.is_dir():
@@ -110,9 +121,13 @@ def screen_to_excel(input_dir: Path, output: Path) -> dict[str, int]:
     temporary = None
     try:
         for path in sources:
+            name = sheet_name(path.stem, used)
+            year, month = inventory_period(name)
             frame = read_screened_csv(path)
-            worksheet = workbook.create_sheet(sheet_name(path.stem, used))
-            worksheet.append(COLUMNS)
+            frame["inv_year"] = pd.Series(year, index=frame.index, dtype="string")
+            frame["inv_month"] = pd.Series(month, index=frame.index, dtype="string")
+            worksheet = workbook.create_sheet(name)
+            worksheet.append(OUTPUT_COLUMNS)
             for row in frame.itertuples(index=False, name=None):
                 # 明確寫入文字，避免以 = 開頭的藥名被 Excel 當成公式。
                 cells = []

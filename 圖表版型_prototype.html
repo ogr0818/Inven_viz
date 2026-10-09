@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>藥品數量比較｜版型預覽</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;padding:30px 24px;color:#25313b;background:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC",sans-serif}
+    h1{margin:0;font-size:25px;font-weight:650;letter-spacing:.02em}p{margin:10px 0 24px;color:#64717b;font-size:14px}
+    .controls{display:flex;align-items:center;gap:22px;flex-wrap:wrap;margin:0 0 22px;font-size:14px}.controls label{display:flex;align-items:center;gap:9px}input{accent-color:#376c89;width:140px}button{border:0;border-radius:5px;padding:8px 14px;background:#edf2f5;color:#25313b;cursor:pointer}
+    .viewport{width:100%;overflow-x:auto;touch-action:pan-y}svg{display:block;min-width:900px;width:100%;height:auto;user-select:none;cursor:grab}svg:active{cursor:grabbing}svg text{font-family:inherit;fill:#25313b;font-size:16px}.column-title{font-weight:650;font-size:18px}.drug{font-size:18px}.value{font-variant-numeric:tabular-nums;font-size:15px}.zero{stroke:#c8d0d6;stroke-width:1}.bar{fill:#376c89}.zero-value{fill:#64717b}
+    .hint{margin-top:12px;font-size:13px;color:#78848e}@media(max-width:600px){body{padding:22px 14px}h1{font-size:21px}}
+  </style>
+</head>
+<body>
+  <!-- 獨立、無持久化的版型預覽；不接入正式資料。 -->
+  <h1>藥品數量比較</h1>
+  <p>115/01–115/09｜示意資料</p>
+  <div class="controls">
+    <label>縮放<input id="zoom" type="range" min="1" max="3" step="0.05" value="1" aria-label="三欄同步縮放"></label>
+    <label>左右移動<input id="pan" type="range" min="-100" max="100" step="1" value="0" aria-label="三欄同步左右移動"></label>
+    <button id="reset" type="button">重設</button>
+  </div>
+  <div class="viewport">
+    <svg id="chart" viewBox="0 0 1100 480" role="img" aria-label="三欄並排的藥品數量圖，各欄品項共用零線，同一品項水平對齊"></svg>
+  </div>
+  <p class="hint">拖曳圖表可同步左右移動三欄。</p>
+  <script>
+    const rows=[
+      {name:"藥品 A",actual:100,qty:70,stock:30,month:"115/09"},
+      {name:"藥品 B",actual:80,qty:-10,stock:20,month:"115/08"},
+      {name:"藥品 C",actual:40,qty:30,stock:60,month:"115/09"}
+    ];
+    const columns=[{title:"實發量",key:"actual"},{title:"total_qty",key:"qty"},{title:"庫存量",key:"stock"}];
+    const svg=document.querySelector("#chart"),zoom=document.querySelector("#zoom"),pan=document.querySelector("#pan");
+    const ns="http://www.w3.org/2000/svg",left=150,width=300,gap=12,plotWidth=254;
+    function element(tag,attrs,text){const el=document.createElementNS(ns,tag);for(const [key,value] of Object.entries(attrs))el.setAttribute(key,value);if(text!==undefined)el.textContent=text;return el;}
+    function draw(){
+      svg.replaceChildren();
+      const definitions=element("defs",{});svg.append(definitions);
+      const z=Number(zoom.value),center=50+Number(pan.value),span=140/z,min=center-span/2;
+      const x=v=>(v-min)/span*plotWidth;
+      svg.append(element("text",{x:0,y:30,class:"column-title"},"drug_name"));
+      rows.forEach((row,i)=>svg.append(element("text",{x:0,y:120+i*120,class:"drug","dominant-baseline":"middle"},row.name)));
+      columns.forEach((column,j)=>{
+        const start=left+j*(width+gap);
+        svg.append(element("text",{x:start,y:30,class:"column-title"},column.title));
+        const clip=element("clipPath",{id:"panel"+j});clip.append(element("rect",{x:start,y:40,width:width-10,height:394}));definitions.append(clip);
+        const group=element("g",{"clip-path":"url(#panel"+j+")"});svg.append(group);
+        const baseline=start+x(0);
+        group.append(element("line",{x1:baseline,x2:baseline,y1:70,y2:420,class:"zero"}));
+        group.append(element("text",{x:baseline,y:61,"text-anchor":"middle",class:"zero-value"},"0"));
+        rows.forEach((row,i)=>{
+          const value=row[column.key],y=120+i*120,endpoint=start+x(value),barLeft=Math.min(baseline,endpoint),barRight=Math.max(baseline,endpoint);
+          const rect=element("rect",{x:barLeft,y:y-16,width:Math.abs(endpoint-baseline),height:32,class:"bar"});
+          rect.append(element("title",{},row.name+"｜"+column.title+"："+value+(column.key==="stock"?"｜庫存年月："+row.month:"")));
+          group.append(rect);
+          group.append(element("text",{x:barRight+7,y:y,"dominant-baseline":"middle",class:"value"},String(value)));
+        });
+      });
+    }
+    zoom.addEventListener("input",draw);pan.addEventListener("input",draw);
+    document.querySelector("#reset").addEventListener("click",()=>{zoom.value=1;pan.value=0;draw()});
+    let drag=null;
+    svg.addEventListener("pointerdown",event=>{if(event.button!==0)return;drag={x:event.clientX,pan:Number(pan.value)};svg.setPointerCapture(event.pointerId)});
+    svg.addEventListener("pointermove",event=>{if(!drag)return;const scale=svg.getBoundingClientRect().width/1100;pan.value=Math.max(-100,Math.min(100,drag.pan-(event.clientX-drag.x)/scale/plotWidth*(140/Number(zoom.value))));draw()});
+    svg.addEventListener("pointerup",()=>drag=null);svg.addEventListener("pointercancel",()=>drag=null);
+    draw();
+  </script>
+</body>
+</html>
