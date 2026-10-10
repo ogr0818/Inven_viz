@@ -7,6 +7,26 @@ wheels/
 *.egg-
 Data/
 tests/
+*.xls[x]
 
 # Virtual environments
 .venv
+
+# 本機資料與產製驗證輸出
+summary.db
+summary.db-*
+backups/
+verification/
+
+# 保留新版整併驗證程式
+!tests/
+tests/*
+!tests/test_summay.py
+!tests/test_screening.py
+!tests/test_inventory_build.py
+!tests/verify_inventory.cjs
+!tests/verify_filters.cjs
+!tests/verify_outputs.py
+
+# Sites 專用來源由獨立儲存庫管理
+/sites/inven-viz/

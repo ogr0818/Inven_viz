@@ -6,7 +6,7 @@
     python summay.py
 
 讀取路徑以本腳本位置為準，不受 VS Code 工作目錄影響。保留月報工作表名稱、
-工作表順序及各表列順序；實發量小於 0 的整列排除，缺當月耗量補 0。
+工作表順序及各表列順序；實發量小於或等於 0 的整列排除，缺當月耗量補 0。
 重複鍵停止處理，完整回報內容；所有驗證與寫入成功後才取代舊輸出。
 """
 
@@ -194,8 +194,8 @@ def merge_to_excel() -> dict[str, dict[str, int]]:
         validate_numbers(frame, ["實發量", "庫存量"])
         missing_base = ~frame["drug_id"].isin(base["drug_id"])
         report_invalid(frame, missing_base, "月報代碼在基本資料中不存在：", ["drug_id"])
-        negative = frame["實發量"].lt(0)
-        eligible = frame.loc[~negative].copy()
+        excluded = frame["實發量"].le(0)
+        eligible = frame.loc[~excluded].copy()
         merged = eligible.merge(base[BASE_COLUMNS], on="drug_id", how="left", sort=False, validate="many_to_one")
         merged = merged.merge(total[TOTAL_COLUMNS], on=KEY_COLUMNS, how="left", sort=False,
                               validate="one_to_one", indicator=True)
@@ -205,7 +205,7 @@ def merge_to_excel() -> dict[str, dict[str, int]]:
         if len(output) > MAX_DATA_ROWS:
             raise ValueError(f"{sheet}：輸出超過 Excel 每張工作表的資料列上限")
         outputs[sheet] = output
-        counts[sheet] = {"input": len(frame), "excluded": int(negative.sum()),
+        counts[sheet] = {"input": len(frame), "excluded": int(excluded.sum()),
                          "filled_zero": int(missing_total.sum()), "output": len(output)}
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -224,7 +224,7 @@ def merge_to_excel() -> dict[str, dict[str, int]]:
             temporary.unlink(missing_ok=True)
 
     for sheet, count in counts.items():
-        print(f"{sheet}：月報 {count['input']:,} 筆；負實發量排除 {count['excluded']:,} 筆；"
+        print(f"{sheet}：月報 {count['input']:,} 筆；非正實發量排除 {count['excluded']:,} 筆；"
               f"缺耗量補零 {count['filled_zero']:,} 筆；輸出 {count['output']:,} 筆")
     print(f"完成：{output_path.resolve()}（{len(outputs)} 張工作表，共 {sum(c['output'] for c in counts.values()):,} 筆月明細）")
     return counts

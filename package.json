@@ -1,0 +1,11 @@
+{
+  "name": "inven-viz-verification",
+  "private": true,
+  "scripts": {
+    "verify:inventory": "node tests/verify_inventory.cjs",
+    "verify:filters": "node tests/verify_filters.cjs"
+  },
+  "devDependencies": {
+    "playwright": "1.62.1"
+  }
+}
