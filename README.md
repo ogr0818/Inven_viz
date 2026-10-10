@@ -4,6 +4,60 @@
 
 本機入口為 `inventory.html`：以本機 `summary.db` 產生的獨立網頁，直接開啟即可查詢與下載，不需要 DB_Viz 資料夾或聊天。
 
+## 每月資料處理：單一 Python 入口
+
+首次建立已完成。將 `base.xlsx`、`月報表.xlsx`、`total_screen.xlsx` 放在專案根目錄，執行：
+
+```sh
+uv sync
+uv run update_summary.py --dry-run
+uv run update_summary.py
+```
+
+也可在已使用專案 Python 環境的編輯器直接執行 `update_summary.py`。不帶參數即更新既有 `summary.db`；預設檔案路徑以腳本所在資料夾為準，不受執行時工作目錄影響。找不到 DB 時停止，不自動建立新 DB。
+
+### 輸入與更新規則
+
+- `base.xlsx`：使用 `base` 工作表，必要欄位為 `drug_id`、`drug_name`、`drug_type`。
+- `月報表.xlsx`：每張工作表名稱為三位民國年加一或兩位月份，例如 `11509`；必要欄位為 `drug_id`、`實發量`、`庫存量`。它決定本次更新的品項與月份。
+- `total_screen.xlsx`：必要欄位為 `drug_id`、`total_qty`、`inv_year`、`inv_month`；依藥品代碼及年月合併，缺對應紀錄的住院耗用補 0。
+- 月報與耗量檔常規各有一張工作表，亦支援多張；讀取全部工作表，不按工作表順序配對。耗量可在多張表分列同一月份，合計不得重複藥品代碼與年月。
+- 月資料必須涵蓋欲更新月份的完整資料，不能只提供新增或更正的幾筆。完整替換月報涵蓋的月份，保留其他月份；重跑不追加重複紀錄。
+- 實發量必須大於 0；非正實發量的整筆排除。住院耗用與庫存保留正負號。整月皆被排除，或有效年月表僅有標題時，仍清除 DB 該月份舊紀錄。
+- 數量只接受 SQLite 範圍內的整數，不自動四捨五入。必要欄位的公式、Excel 錯誤、缺值、無效藥碼、無效年月及重複鍵均停止處理，回報來源位置。被排除的月報列仍須匹配來源基本資料與 DB 目前主檔。
+- 所有來源先完成驗證，再以單次交易更新 DB。正式更新前自動備份至 DB 旁的 `backups/`；寫入失敗回復整次交易。`--dry-run` 不修改檔案、不建立備份。
+
+此入口在記憶體完成彙整，不讀取或改寫既有 `summay.xlsx`，也不改寫三份來源 Excel。若仍需要獨立彙整 Excel，可另外執行 `uv run summay.py`。
+
+### 主檔更新
+
+平常執行只更新月資料，不因讀取 `base.xlsx` 而自動替換 DB 目前主檔。有新藥品時，先提供完整新版 `base.xlsx` 並明確執行：
+
+```sh
+uv run update_summary.py --replace-base --dry-run
+uv run update_summary.py --replace-base
+uv run update_summary.py
+```
+
+`--replace-base` 只替換目前主檔，不讀取月報及耗量檔；穩定藥碼與歷史月明細的名稱、劑型、數量保留。它不會連帶執行月資料更新。
+
+### 備份還原
+
+需要還原時，先停止其他資料庫讀寫程序並另存目前 DB 副本，再將選定的 `backups/*.db` 複製為 `summary.db`，執行 `uv run manage_summary.py info` 檢查。還原不會自動更新既有 HTML 或已發布網站，須重新產製及發布。
+
+### 自訂路徑與移機重建
+
+所有路徑可明確指定；自訂相對路徑以執行時目錄為準：
+
+```sh
+uv run update_summary.py --db summary.db --base base.xlsx --monthly 月報表.xlsx --total total_screen.xlsx
+```
+
+移機時攜帶現有 DB，或備妥完整歷史來源後，明確使用 `--init --db another_summary.db` 建立另一份 DB。首次建立拒絕覆寫既有路徑，不是日常更新指令；重建結果只涵蓋所提供的來源月份。
+
+資料結構與歷史查詢見 [SCHEMA.md](SCHEMA.md)，來源整併及獨立運作驗證見 [Inven_DB 整併驗證](docs/Inven_DB整併驗證報告.md)。
+Inven_DB 原始材料已完整保存於本機 `backups/inven-db-source-20261010.zip`，檔案清單與 SHA-256 位於同目錄的 `.manifest.json`；原始文件只供追溯。DB、來源 Excel、備份包不納入 Git，移機須另攜帶。原資料夾及對應專案由使用者手動封存。
+
 ## 新版網站與資料更新
 
 在專案根目錄執行：
@@ -14,18 +68,15 @@ uv run manage_summary.py info
 uv run scripts/build_inventory.py
 ```
 
-產製成功後開啟 `inventory.html`。後續資料更新依序為：
+產製成功後開啟 `inventory.html`。後續資料與網站更新依序為：
 
 ```sh
-# 首次建立時使用；既有 summary.db 不執行 init
-uv run manage_summary.py init --base base.xlsx --summary summay.xlsx
-
-# 後續以提供的完整月份替換對應月份，保留其他月份
-uv run manage_summary.py update-monthly --summary summay.xlsx
+# 三份 Excel 完整替換輸入月份，保留其他月份
+uv run update_summary.py
 uv run scripts/build_inventory.py
 ```
 
-如需完整替換目前主檔，使用 `uv run manage_summary.py replace-base --base base.xlsx`；歷史月紀錄保留原名稱與劑型。
+如需完整替換目前主檔，使用上述 `uv run update_summary.py --replace-base`；歷史月紀錄保留原名稱與劑型。舊 `manage_summary.py` 的維護介面仍保留，可用於直接匯入已彙整 Excel。
 支援先加 `--dry-run` 檢查匯入或主檔更新；正式更新前自動備份至 `backups/`。網站更新仍須重新產生 HTML，資料庫變動不會自動反映於已產生或已發布的網頁。
 
 可指定其他輸入與輸出：
@@ -57,6 +108,8 @@ node tests/verify_inventory.cjs
 node tests/verify_filters.cjs
 uv run --with pillow python tests/verify_outputs.py
 ```
+
+Python 測試亦涵蓋三份 Excel 到 DB 的單一入口，以及自 Inven_DB 納入的資料庫管理測試。
 
 瀏覽器驗證使用目前隨整併帶入的 11501–11509、579 品項、3,400 筆資料作為全量驗收基準；未來改用其他資料時須同步更新驗收基準。`test_inventory_build.py` 使用獨立暫存資料驗證歷史主檔、零實發量與失敗保護，不依賴正式 DB。瀏覽器腳本可用 `CHROME_BIN` 指定已安裝 Chrome，用 `PYTHON` 指定 Python，用 `INVENTORY_URL` 指定要驗證的本機 HTTP 網址（預設驗證本機檔案）；下載與截圖證據產生於 `verification/`。Excel／PNG 回讀另需 Pillow，可用 `uv run --with pillow python tests/verify_outputs.py`。
 

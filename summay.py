@@ -11,6 +11,7 @@
 """
 
 import math
+from dataclasses import dataclass
 from pathlib import Path
 import re
 import sys
@@ -19,6 +20,8 @@ import unicodedata
 from zipfile import BadZipFile
 
 import pandas as pd
+
+from manage_summary import integer_value
 from openpyxl.cell.cell import ILLEGAL_CHARACTERS_RE
 from openpyxl.styles import Alignment, Font, PatternFill
 
@@ -60,6 +63,11 @@ def read_frame(book: pd.ExcelFile, path: Path, sheet: str, columns: list[str]) -
     invalid = [column for column in columns if headers.count(column) != 1]
     if invalid:
         raise ValueError(f"{path.name}／{sheet}：必要欄位缺少或重複：{', '.join(invalid)}")
+    indices = [headers.index(column) for column in columns]
+    for row_number, row in enumerate(book.book[sheet].iter_rows(min_row=2), start=2):
+        for column, index in zip(columns, indices):
+            if index < len(row) and row[index].data_type in ("f", "e"):
+                raise ValueError(f"{path.name}／{sheet}／第 {row_number} 列：{column}含公式或 Excel 錯誤，請提供數值。")
     frame = pd.read_excel(book, sheet_name=sheet, dtype="string", keep_default_na=False)[columns].copy()
     frame["來源檔案"] = path.name
     frame["來源工作表"] = sheet
@@ -85,12 +93,14 @@ def validate_text(frame: pd.DataFrame, columns: list[str]) -> None:
 
 
 def validate_numbers(frame: pd.DataFrame, columns: list[str]) -> None:
-    """只驗證有限數值，不套用上游交易數量界線，也不變更正負號。"""
+    """沿用 DB 整數規則，不四捨五入，也不套用上游單筆交易數量界線。"""
     for column in columns:
-        numbers = pd.to_numeric(frame[column], errors="coerce")
-        valid = numbers.notna() & numbers.map(lambda value: math.isfinite(value) if pd.notna(value) else False)
-        report_invalid(frame, ~valid, f"{column} 須為有效有限數值：", columns)
-        frame[column] = numbers
+        values = []
+        for _, row in frame.iterrows():
+            location = f"{row['來源檔案']}／{row['來源工作表']}／第 {row['Excel 列號']} 列"
+            values.append(integer_value(row[column], column, location))
+        # 明確指定整數型別，避免空表或大整數在合併時經浮點數失真。
+        frame[column] = pd.Series(values, index=frame.index, dtype="Int64")
 
 
 def validate_unique(frame: pd.DataFrame, keys: list[str], label: str, raw: pd.DataFrame | None = None) -> None:
@@ -148,27 +158,32 @@ def format_sheet(worksheet) -> None:
         worksheet.row_dimensions[row[0].row].height = max(24, lines * 15 + 8)
 
 
-def merge_to_excel() -> dict[str, dict[str, int]]:
-    """驗證完整輸入、合併每個品項月份，再以暫存檔取代輸出。"""
-    base_path, monthly_path, total_path = (BASE_DIR / name for name in INPUT_NAMES)
-    output_path = BASE_DIR / OUTPUT_NAME
+@dataclass
+class MonthlyMerge:
+    outputs: dict[str, pd.DataFrame]
+    counts: dict[str, dict[str, int]]
+    code_locations: dict[str, str]
+
+
+def prepare_monthly(base_path: Path, monthly_path: Path, total_path: Path) -> MonthlyMerge:
+    """只讀取及驗證三份來源，在記憶體產生月明細，不寫入檔案。"""
     base_sheet = "base"
     sources = (base_path, monthly_path, total_path)
-    if output_path.resolve() in {path.resolve() for path in sources}:
-        raise ValueError("輸出路徑不可與任何輸入檔案相同")
     for path in sources:
         if not path.is_file():
             raise ValueError(f"找不到輸入檔案：{path}")
 
-    with pd.ExcelFile(base_path, engine="openpyxl") as book:
+    with pd.ExcelFile(base_path, engine="openpyxl", engine_kwargs={"data_only": False}) as book:
         if base_sheet not in book.sheet_names:
             raise ValueError(f"{base_path.name}：找不到基本資料工作表 {base_sheet}")
         base = read_frame(book, base_path, base_sheet, BASE_COLUMNS)
+    if base.empty:
+        raise ValueError("主檔沒有藥品資料，拒絕使用空主檔。")
     validate_unique(base, ["drug_id"], "基本資料")
     validate_text(base, BASE_COLUMNS)
 
     total_frames = []
-    with pd.ExcelFile(total_path, engine="openpyxl") as book:
+    with pd.ExcelFile(total_path, engine="openpyxl", engine_kwargs={"data_only": False}) as book:
         for sheet in book.sheet_names:
             total_frames.append(read_frame(book, total_path, sheet, TOTAL_COLUMNS))
     total_raw = pd.concat(total_frames, ignore_index=True)
@@ -180,7 +195,8 @@ def merge_to_excel() -> dict[str, dict[str, int]]:
     validate_numbers(total, ["total_qty"])
 
     months = {}
-    with pd.ExcelFile(monthly_path, engine="openpyxl") as book:
+    code_locations = {}
+    with pd.ExcelFile(monthly_path, engine="openpyxl", engine_kwargs={"data_only": False}) as book:
         for sheet in book.sheet_names:
             year, month = inventory_period(sheet)
             frame = read_frame(book, monthly_path, sheet, MONTHLY_COLUMNS)
@@ -191,6 +207,9 @@ def merge_to_excel() -> dict[str, dict[str, int]]:
     outputs, counts = {}, {}
     for sheet, frame in months.items():
         validate_text(frame, ["drug_id"])
+        for _, row in frame.iterrows():
+            code_locations.setdefault(row["drug_id"],
+                f"{monthly_path.name}／{sheet}／第 {row['Excel 列號']} 列")
         validate_numbers(frame, ["實發量", "庫存量"])
         missing_base = ~frame["drug_id"].isin(base["drug_id"])
         report_invalid(frame, missing_base, "月報代碼在基本資料中不存在：", ["drug_id"])
@@ -208,6 +227,17 @@ def merge_to_excel() -> dict[str, dict[str, int]]:
         counts[sheet] = {"input": len(frame), "excluded": int(excluded.sum()),
                          "filled_zero": int(missing_total.sum()), "output": len(output)}
 
+    return MonthlyMerge(outputs, counts, code_locations)
+
+
+def merge_to_excel() -> dict[str, dict[str, int]]:
+    """驗證完整輸入、合併每個品項月份，再以暫存檔取代輸出。"""
+    sources = tuple(BASE_DIR / name for name in INPUT_NAMES)
+    output_path = BASE_DIR / OUTPUT_NAME
+    if output_path.resolve() in {path.resolve() for path in sources}:
+        raise ValueError("輸出路徑不可與任何輸入檔案相同")
+    merged = prepare_monthly(*sources)
+    outputs, counts = merged.outputs, merged.counts
     output_path.parent.mkdir(parents=True, exist_ok=True)
     temporary = None
     try:

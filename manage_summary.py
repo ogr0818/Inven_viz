@@ -33,7 +33,7 @@ try:
     from sqlalchemy.schema import CreateIndex, CreateTable
 except ImportError as exc:
     raise SystemExit(
-        "缺少必要套件，請先執行：python -m pip install -r requirements.txt\n"
+        "缺少必要套件，請先在專案目錄執行：uv sync\n"
         f"詳細原因：{exc}"
     ) from exc
 
@@ -389,6 +389,15 @@ def initialize(db: Path, base: Path, summary: Path, dry_run: bool = False) -> di
     masters = read_master(base)
     monthly = read_monthly(summary)
     require_known_codes(monthly, {r.drug_code for r in masters})
+    return initialize_data(db, masters, monthly, dry_run)
+
+
+def initialize_data(db: Path, masters: list[MasterRow], monthly: MonthlyImport,
+                    dry_run: bool = False) -> dict[str, Any]:
+    """以已驗證月明細建立 DB；保留拒絕覆寫及原子發布保護。"""
+    if db.exists():
+        raise InputError(f"資料庫已存在：{db}；init 不會覆寫，請改用更新指令。")
+    require_known_codes(monthly, {r.drug_code for r in masters})
     report = {"作業": "建立資料庫", "資料庫": str(db), "預演": dry_run,
               "主檔筆數": len(masters), **monthly.report()}
     if dry_run:
@@ -420,6 +429,13 @@ def initialize(db: Path, base: Path, summary: Path, dry_run: bool = False) -> di
 def update_monthly(db: Path, summary: Path, dry_run: bool = False) -> dict[str, Any]:
     require_database(db)
     monthly = read_monthly(summary)
+    return update_monthly_data(db, monthly, dry_run)
+
+
+def update_monthly_data(db: Path, monthly: MonthlyImport,
+                        dry_run: bool = False) -> dict[str, Any]:
+    """共用整月交易，接受 Excel 讀入或三檔整併後的月明細。"""
+    require_database(db)
     report = {"作業": "整月替換", "資料庫": str(db), "預演": dry_run, **monthly.report()}
     engine = database_engine(db)
     try:

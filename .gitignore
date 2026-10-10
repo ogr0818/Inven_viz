@@ -24,6 +24,8 @@ tests/*
 !tests/test_summay.py
 !tests/test_screening.py
 !tests/test_inventory_build.py
+!tests/test_manage_summary.py
+!tests/test_update_summary.py
 !tests/verify_inventory.cjs
 !tests/verify_filters.cjs
 !tests/verify_outputs.py

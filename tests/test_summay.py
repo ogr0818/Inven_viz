@@ -38,7 +38,7 @@ class SummayTests(unittest.TestCase):
             "11602": [],
         }
         self.total_rows = [
-            ["ABC01O", 7.5, "116", "01"], ["ABC02I", 0, "116", "01"],
+            ["ABC01O", 7, "116", "01"], ["ABC02I", 0, "116", "01"],
             ["ABC03E", -3, "116", "01"], ["ABC04O", 5, "116", "01"],
             ["ABC01O", 3, "115", "12"], ["ABC04O", 1, "115", "12"],
             ["ABC03E", 12, "115", "12"],
@@ -76,7 +76,7 @@ class SummayTests(unittest.TestCase):
             self.assertEqual(book.sheetnames, list(self.month_rows))
             self.assertEqual(list(book["1161"].values), [
                 tuple(summay.OUTPUT_NAMES.values()),
-                ("ABC01O", "Alpha", 10, 7.5, 3, "116", "01", "O"),
+                ("ABC01O", "Alpha", 10, 7, 3, "116", "01", "O"),
                 ("ABC03E", "Gamma", 4, -3, -2, "116", "01", "E"),
                 ("ABC05S", "Epsilon", 6, 0, 10, "116", "01", "7"),
             ])
