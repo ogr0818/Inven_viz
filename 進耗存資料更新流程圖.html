@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026 年 10 月進耗存資料更新流程</title><style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC",sans-serif;color:#193248;background:#f4f8fb}body{margin:0}main{max-width:1000px;margin:auto;padding:32px 20px 56px}h1{font-size:clamp(1.5rem,4vw,2.4rem);margin:.2em 0}h2{font-size:1.25rem;margin-top:2em}p,li{line-height:1.8}.tag{color:#087b83;font-weight:700;letter-spacing:.08em}.box{background:white;border:1px solid #d6e4eb;border-radius:14px;padding:20px;margin:18px 0;box-shadow:0 5px 22px #213b4b0a}.diagram{--pele-bg:#ffffff;--pele-fg:#17374a;--pele-line:#617c8d;--pele-surface:#edf7f7;--pele-surface-alt:#e4eef7;--pele-border:#9cbec7;--pele-accent:#087b83;--pele-font:sans-serif;overflow:auto}.diagram svg{max-width:100%;height:auto;display:block;margin:auto}.notice{border-left:4px solid #e7a83e;padding:10px 16px;background:#fff8e9}code,pre{font-family:ui-monospace,monospace;font-size:.92em}pre.commands{background:#102b3d;color:#e5f7f7;padding:18px;border-radius:10px;overflow:auto;line-height:1.7}table{border-collapse:collapse;width:100%}th,td{text-align:left;border-bottom:1px solid #dde8ee;padding:10px;vertical-align:top}a{color:#087b83}.error{color:#a53427;font-weight:700}@media print{body{background:white}.box{box-shadow:none;break-inside:avoid}}
+</style></head><body><main><div class="tag">作業流程圖 · PELE</div><h1>2026 年 10 月進耗存資料更新</h1><p>從來源資料準備、資料庫更新，到既有 Sites 網站發布的示範流程。</p><div class="notice">OUT、UD 篩選程式讀取 CSV，不能直接讀取假設提供的 XLSX。請先確認來源欄位及十月份資料，再轉成符合格式的 CSV。</div>
+<section class="box"><h2>01 · 來源與資料整併</h2><div id="diagram1" class="diagram" aria-label="十月份來源資料整併流程"><p>正在載入 Pele 流程圖……</p></div></section>
+<section class="box"><h2>02 · 更新資料庫與網站</h2><div id="diagram2" class="diagram" aria-label="資料庫與 Sites 更新流程"><p>正在載入 Pele 流程圖……</p></div></section>
+<section class="box"><h2>執行前確認</h2><table><thead><tr><th>來源</th><th>必要準備</th></tr></thead><tbody><tr><td>202610.xlsx</td><td>完整十月份實發量與庫存量。工作表名稱須能轉換為 11510；例如 2026年10月。</td></tr><tr><td>2026_out.xlsx</td><td>確認十月份資料及必要欄位，轉為 Data/OUT/11510.csv。</td></tr><tr><td>2026_ud.xlsx</td><td>確認十月份資料及必要欄位，轉為 Data/UD/11510.csv，須包含 phtxid。</td></tr><tr><td>base.xlsx</td><td>base 工作表含 drug_id、drug_name、drug_type。若有新藥，先以完整新版更新資料庫主檔。</td></tr></tbody></table><p>篩選程式會讀取指定資料夾內所有 CSV；請確認其中每個檔案與月份均為本次預期處理的資料。</p></section>
+<section class="box"><h2>指令順序</h2><pre class="commands">uv run rename_monthly_xlsx.py "202610.xlsx"
+uv run out_screen.py
+uv run ud_screen.py
+uv run total_screen.py
+uv run update_summary.py --dry-run
+uv run update_summary.py
+uv run scripts/build_inventory.py --output sites/inven-viz/dist/index.html</pre><p>若需要更新藥品主檔，先執行 <code>uv run update_summary.py --replace-base --dry-run</code>，確認後執行 <code>uv run update_summary.py --replace-base</code>。預演須先檢查輸入筆數、排除筆數、缺耗量補零及替換月份。</p></section>
+<section class="box"><h2>發布與驗證</h2><p>檢查 11510 年月、抽查品項數量及下載內容後，使用 Sites 工作流程同步既有網站的專用來源、封裝、保存版本並部署；確認部署成功與公開頁面。資料庫或一般 GitHub 更新不會自行完成 Sites 部署。</p><p>來源依專案 README 與 Sites 正式發布紀錄。此頁為流程示範，並未執行資料更新或部署。</p></section>
+</main><script src="https://cdn.jsdelivr.net/npm/pele@1/dist/pele.global.js"></script><script>
+const diagrams={diagram1:`flowchart TD
+A[202610.xlsx 實發量與庫存量] --> B[rename_monthly_xlsx.py]
+B --> C[月報表.xlsx 工作表 11510]
+D[2026_out.xlsx OUT 資料] --> E[確認並轉出十月 CSV]
+E --> F[Data OUT 11510.csv]
+F --> G[out_screen.py]
+G --> H[out_screen.xlsx]
+I[2026_ud.xlsx UD 資料] --> J[確認並轉出十月 CSV]
+J --> K[Data UD 11510.csv]
+K --> L[ud_screen.py]
+L --> M[ud_screen.xlsx]
+H --> N[total_screen.py]
+M --> N
+N --> O[total_screen.xlsx]
+C --> P[進入資料庫更新]
+O --> P
+Q[base.xlsx 藥品基本資料] --> P`,diagram2:`flowchart TD
+A[月報表與耗量及基本資料] --> B{有新藥品嗎}
+B -->|有| C[完整新版 base 主檔預演與更新]
+B -->|沒有| D[預演 update_summary.py]
+C --> D
+D --> E{檢查通過嗎}
+E -->|否| F[修正來源後重新預演]
+F --> D
+E -->|是| G[正式更新並備份資料庫]
+G --> H[整月替換 11510 保留其他月份]
+H --> I[build_inventory.py 產生網站 HTML]
+I --> J[檢查月份 數值及下載內容]
+J --> K[同步 Sites 專用來源與封裝]
+K --> L[儲存版本並部署既有 Site]
+L --> M[確認部署成功與正式頁面]`};
+for(const [id,source] of Object.entries(diagrams)){const el=document.getElementById(id);try{if(!window.pele)throw new Error('無法載入 Pele 套件');pele.mount(el,source)}catch(err){el.textContent='流程圖無法顯示：'+err.message+'。請確認網路連線後重新整理。';el.classList.add('error')}}
+</script></body></html>
