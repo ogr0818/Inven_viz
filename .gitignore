@@ -7,7 +7,7 @@ wheels/
 *.egg-
 Data/
 tests/
-*.xlsx
+./*.xls[x]
 *.xls
 
 # Virtual environments
