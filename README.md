@@ -65,21 +65,50 @@ Inven_DB 原始材料已完整保存於本機 `backups/inven-db-source-20261010.
 ```sh
 uv sync
 uv run manage_summary.py info
-uv run scripts/build_inventory.py
 ```
 
-產製成功後開啟 `inventory.html`。後續資料與網站更新依序為：
+每月先更新資料庫，再執行下方「統一產生三份 HTML」流程：
 
 ```sh
 # 三份 Excel 完整替換輸入月份，保留其他月份
 uv run update_summary.py
-uv run scripts/build_inventory.py
 ```
+
+### 統一產生三份 HTML
+
+以 `summary.db` 為唯一資料來源，先產生 Sites 專用入口，再複製為兩份本機入口，避免三份 HTML 的資料版本不同。在專案根目錄執行：
+
+```sh
+uv run python - <<'PYTHON'
+from pathlib import Path
+from shutil import copyfile
+from scripts.build_inventory import build
+
+source = Path('sites/inven-viz/dist/index.html')
+build(Path('summary.db'), source)
+for target in (Path('inventory.html'), Path('dist/index.html')):
+    target.parent.mkdir(parents=True, exist_ok=True)
+    copyfile(source, target)
+assert all(target.read_bytes() == source.read_bytes()
+           for target in (Path('inventory.html'), Path('dist/index.html')))
+print('三份 HTML 內容一致')
+PYTHON
+```
+
+成功後可直接開啟 `inventory.html`。三份檔案用途如下：
+
+| 專案根目錄下的路徑 | 用途 |
+| --- | --- |
+| `sites/inven-viz/dist/index.html` | 正式 Sites 發布來源 |
+| `inventory.html` | 本機直接開啟與查詢 |
+| `dist/index.html` | 本機靜態入口副本 |
+
+2026-11-02 核對的本機資料為 11501–11510、581 品項、3,788 筆月明細。這是當次資料快照；後續應以產製指令回報的實際結果為準。本機產製成功不代表線上網站已更新，仍須完成下方部署流程。
 
 如需完整替換目前主檔，使用上述 `uv run update_summary.py --replace-base`；歷史月紀錄保留原名稱與劑型。舊 `manage_summary.py` 的維護介面仍保留，可用於直接匯入已彙整 Excel。
 支援先加 `--dry-run` 檢查匯入或主檔更新；正式更新前自動備份至 `backups/`。網站更新仍須重新產生 HTML，資料庫變動不會自動反映於已產生或已發布的網頁。
 
-可指定其他輸入與輸出：
+如需另外產生自訂檔案，可指定其他輸入與輸出；此指令僅更新指定檔案，不會同步其他 HTML：
 
 ```sh
 uv run scripts/build_inventory.py --db summary.db --output inventory.html
@@ -92,7 +121,7 @@ uv run scripts/build_inventory.py --db summary.db --output inventory.html
 
 ## DB_Viz 整併與保存
 
-程式與範本已納入 `scripts/`，正式入口為 `inventory.html`；舊 `inventory_trial_prototype.html`、`inventory_release_preview.html` 僅為歷史預覽。整併未復原工作區原本刪除的 SPEC.md，議題與規格繼續使用 GitHub Issues。
+程式與範本已納入 `scripts/`，本機入口為 `inventory.html`，正式 Sites 發布來源為 `sites/inven-viz/dist/index.html`；舊 `inventory_trial_prototype.html`、`inventory_release_preview.html` 僅為歷史預覽。整併未復原工作區原本刪除的 SPEC.md，議題與規格繼續使用 GitHub Issues。
 
 本機 `summary.db` 為來源資料庫的獨立副本；完整來源材料另存於 `backups/db-viz-source-20261010.zip`，含原規格、討論結論、程式、資料庫與舊驗證證據。此備份與 DB 為本機檔案，未納入 Git；若要移至其他電腦，須另行攜帶 DB 或從來源 Excel 重建。既有彙整 Excel 不在本次整併中重寫。
 
@@ -111,7 +140,7 @@ uv run --with pillow python tests/verify_outputs.py
 
 Python 測試亦涵蓋三份 Excel 到 DB 的單一入口，以及自 Inven_DB 納入的資料庫管理測試。
 
-瀏覽器驗證使用目前隨整併帶入的 11501–11509、579 品項、3,400 筆資料作為全量驗收基準；未來改用其他資料時須同步更新驗收基準。`test_inventory_build.py` 使用獨立暫存資料驗證歷史主檔、零實發量與失敗保護，不依賴正式 DB。瀏覽器腳本可用 `CHROME_BIN` 指定已安裝 Chrome，用 `PYTHON` 指定 Python，用 `INVENTORY_URL` 指定要驗證的本機 HTTP 網址（預設驗證本機檔案）；下載與截圖證據產生於 `verification/`。Excel／PNG 回讀另需 Pillow，可用 `uv run --with pillow python tests/verify_outputs.py`。
+既有瀏覽器驗證腳本使用整併時的 11501–11509、579 品項、3,400 筆資料作為歷史全量驗收基準；套用至更新後資料前，須先核對並調整腳本中的固定預期值。HTML 內容同步驗證不代表已重新通過全部瀏覽器測試。`test_inventory_build.py` 使用獨立暫存資料驗證歷史主檔、零實發量與失敗保護，不依賴正式 DB。瀏覽器腳本可用 `CHROME_BIN` 指定已安裝 Chrome，用 `PYTHON` 指定 Python，用 `INVENTORY_URL` 指定要驗證的本機 HTTP 網址（預設驗證本機檔案）；下載與截圖證據產生於 `verification/`。Excel／PNG 回讀另需 Pillow，可用 `uv run --with pillow python tests/verify_outputs.py`。
 
 ## 外部資料清理
 
@@ -145,12 +174,19 @@ OUT 輸出依序包含 `drug_id`、`drug_name`、`total_qty`、`phoutid`、`inv_
 
 ## 部署
 
-2026-10-10 公開部署前複查通過，詳見 [Sites 部署前檢查](docs/Sites部署前檢查.md)。以以下指令產生 Sites 靜態入口：
+既有網站已於 2026-10-10 完成首次公開發布：[正式網址](https://inven-viz.chi-nan.chatgpt.site)。日常更新沿用既有 Site，不再建立新 Site。首次發布紀錄見 [Sites 正式發布](docs/Sites正式發布.md)；[Sites 部署前檢查](docs/Sites部署前檢查.md) 為歷史紀錄，不代表目前資料或部署狀態。
 
-```sh
-uv run scripts/build_inventory.py --output dist/index.html
-```
+### 既有網站更新
 
-公開內容僅為 `dist/index.html`（內嵌網站月明細），部署目錄指定 `dist`；不將專案根目錄作為公開目錄。DB、來源 Excel、備份與驗證輸出留在本機。這份網站無伺服器執行依賴，不需要線上 SQLite、Python 或 npm 套件。
+1. 更新本機 `summary.db`，執行上方「統一產生三份 HTML」，完成適用的資料與功能驗證。
+2. 使用 Sites 技能，從專用來源目錄 `sites/inven-viz/` 執行來源同步。沿用 `.openai/hosting.json` 的 Site ID：`appgprj_6aca1f709c2c8191a02933ab4954b626`，其靜態目錄設定為 `dist`。
+3. 取得當次來源存取資訊，透過官方 helper 提交、推送並封裝來源，再保存 Sites 新版及部署。短期憑證不寫入檔案、文件或 Git。
+4. 確認部署終態成功、正式網址與既有公開權限。若來源同步或部署失敗，線上網站仍可能是舊版；不可只依本機產製成功宣稱發布完成。
 
-正式 Sites 發布仍需建立 Site、保存回傳的 Site ID、同步專用來源並打包、將訪客權限設為公開，以及部署已保存版本。2026-10-10 已完成正式公開發布：[正式網址](https://inven-viz.chi-nan.chatgpt.site)。發布紀錄與後續更新方式見 [Sites 正式發布](docs/Sites正式發布.md)。
+正式公開資產為專用來源目錄內的 `dist/index.html`，即本專案的 `sites/inven-viz/dist/index.html`。不將專案根目錄作為公開目錄。DB、來源 Excel、備份與驗證輸出留在本機。網站無伺服器執行依賴，不需要線上 SQLite、Python 或 npm 套件。
+
+### GitHub 與 Sites 的關係
+
+主專案 Git 儲存庫與 `sites/inven-viz/` 的 Sites 專用來源儲存庫分開管理。推送 GitHub 不會自動發布 Sites；根目錄 `.gitignore` 忽略專用來源目錄，是為避免將其誤加為嵌入式儲存庫。Sites 來源同步應在專用目錄進行，不從主專案根目錄執行。Excel 檔案不納入 Git。
+
+首次註冊新 Site 的流程僅適用於另外建立的新網站；本專案已保存 Site 身分，後續更新應維持原 Site ID、正式網址與公開權限。
