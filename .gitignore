@@ -10,6 +10,8 @@ tests/
 *.xlsx
 *.XLSX
 *.xls
+*.csv
+*.CSV
 
 # Virtual environments
 .venv
@@ -28,6 +30,7 @@ tests/*
 !tests/test_inventory_build.py
 !tests/test_manage_summary.py
 !tests/test_update_summary.py
+!tests/test_monthly_pipeline.py
 !tests/verify_inventory.cjs
 !tests/verify_filters.cjs
 !tests/verify_outputs.py

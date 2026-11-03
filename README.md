@@ -4,7 +4,25 @@
 
 本機入口為 `inventory.html`：以本機 `summary.db` 產生的獨立網頁，直接開啟即可查詢與下載，不需要 DB_Viz 資料夾或聊天。
 
-## 每月資料處理：單一 Python 入口
+## 每月更新：三份原始資料
+
+準備同一月份的原始月報 `.xlsx`、OUT 和 UD `.csv`。CSV 檔名使用三位民國年、兩位月份及類型，例如 `11510_out.csv`、`11510_ud.csv`；英文大小寫不限。月報必須只有一張該月份工作表，名稱例如 `2026年10月` 或 `11510`，欄位含「藥品代碼」（或 `drug_id`）、「實發量」及「庫存量」。工作表的必要欄位不得有公式或 Excel 錯誤值。月報必須是該月完整資料；重跑會替換整月資料，不會累加重複紀錄。
+
+既有 `summary.db` 與 `base.xlsx` 留在專案根目錄，不必每月重新提供。三份新來源可放在任意位置；在專案根目錄執行（請替換實際路徑）：
+
+```sh
+uv sync
+uv run python monthly_pipeline.py "2026年10月報表.xlsx" "11510_out.csv" "11510_ud.csv" --dry-run
+uv run python monthly_pipeline.py "2026年10月報表.xlsx" "11510_out.csv" "11510_ud.csv"
+```
+
+先執行預演，檢視來源與排除筆數、缺耗量補零筆數及年月，再執行正式更新。程式檢查三份資料的年月，沿用 OUT／UD 的 5630 篩選、數量範圍與 UD 符號規則；以本機主檔與月報整併，僅納入實發量大於 0 的月明細，缺少耗量的品項補 0。來源檔不會被改寫，中間檔在暫存目錄處理。
+
+程式先複製資料庫，在暫存副本完成月資料更新、完整性與外鍵檢查，並產製驗證網頁；`--dry-run` 不修改正式資料庫及三份 HTML，也不建立正式備份。正式執行會先在 `backups/` 備份，再更新正式資料庫，核對資料與預演結果，最後同步 `sites/inven-viz/dist/index.html`、`inventory.html` 與 `dist/index.html`。若正式資料庫更新後 HTML 同步失敗，程式會顯示備份位置及錯誤；修正後重跑，或依下方備份還原說明處理。請避免其他程序同時寫入資料庫或輸出檔。
+
+完成代表部署檔已準備好，**尚未發布到 Sites**；仍需依「部署」段落執行 Sites 來源同步與部署。`base.xlsx` 和資料庫的目前主檔必須已包含月報藥碼；遇到新藥時依下方「主檔更新」處理。CSV 來源檔不納入 Git。
+
+## 進階：以三份 Excel 更新資料庫
 
 首次建立已完成。將 `base.xlsx`、`月報表.xlsx`、`total_screen.xlsx` 放在專案根目錄，執行：
 
@@ -121,7 +139,7 @@ uv run scripts/build_inventory.py --db summary.db --output inventory.html
 
 ## DB_Viz 整併與保存
 
-程式與範本已納入 `scripts/`，本機入口為 `inventory.html`，正式 Sites 發布來源為 `sites/inven-viz/dist/index.html`；舊 `inventory_trial_prototype.html`、`inventory_release_preview.html` 僅為歷史預覽。整併未復原工作區原本刪除的 SPEC.md，議題與規格繼續使用 GitHub Issues。
+程式與範本已納入 `scripts/`，本機入口為 `inventory.html`，正式 Sites 發布來源為 `sites/inven-viz/dist/index.html`；舊版預覽與早期構想集中保存在 [`docs/歷史構想與預覽/`](docs/歷史構想與預覽/)，僅供追溯，非每月更新或部署所需。整併未復原工作區原本刪除的 SPEC.md，議題與規格繼續使用 GitHub Issues。
 
 本機 `summary.db` 為來源資料庫的獨立副本；完整來源材料另存於 `backups/db-viz-source-20261010.zip`，含原規格、討論結論、程式、資料庫與舊驗證證據。此備份與 DB 為本機檔案，未納入 Git；若要移至其他電腦，須另行攜帶 DB 或從來源 Excel 重建。既有彙整 Excel 不在本次整併中重寫。
 

@@ -69,10 +69,10 @@ def aggregate_rows(sheet, indices, header_row):
     return totals
 
 
-def convert_xlsx(input_path, header_row=1):
+def convert_xlsx(input_path, header_row=1, output_path=None):
     """處理所有工作表並另存檔案；回傳輸出 Path。"""
     source = Path(input_path).expanduser().resolve()
-    target = OUTPUT_PATH.resolve()
+    target = Path(output_path or OUTPUT_PATH).resolve()
     if source.suffix.lower() != ".xlsx" or target.suffix.lower() != ".xlsx":
         raise ValueError("輸入與輸出檔案皆須為 .xlsx。")
     if not source.is_file():
